@@ -12,11 +12,11 @@ baseURL =  'https://books.toscrape.com/catalogue/page-'
 livros = []
 dataHoje = datetime.date.today().strftime('%d-%m-%Y')
 agora = datetime.datetime.now()
-paginaLimite = 3
-cardTempMin = 1 
-cardTempMax = 3
-pagTempMin = 2
-pagTempMax = 4
+paginaLimite = 1
+cardTempMin = 0.1
+cardTempMax = 0.1
+pagTempMin = 0.1
+pagTempMax = 0.1
 bancoDeDados = 'banco_filmes.db'
 saidaCSV = f'livros_{dataHoje}.csv'
 
@@ -51,18 +51,18 @@ for pagina in range (1, paginaLimite + 1):
             if titulo != 'N/A':
                 livros.append({
                     'Titulo':titulo,
-                    'Peco':preco,
+                    'Preco':preco,
                     'Estoque':estoque
                 })
                 
                 print(f'Livro: {titulo}')
-                print(f'Preço: {preco}')
+                print(f'Preco: {preco}')
                 print(f'Estoque: {estoque}')
                 print (f'-'*30)
             tempo = random.uniform(cardTempMin, cardTempMax)
             time.sleep(tempo)
         except Exception as errinho:
-            print('Erro ao processar o cartão:{errinho}')
+            print(f'Erro ao processar o cartão:{errinho}')
         tempo = tempo = random.uniform(pagTempMin, pagTempMax)
         time.sleep(tempo)
     
