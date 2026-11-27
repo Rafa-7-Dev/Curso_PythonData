@@ -318,8 +318,109 @@ def editar_selic():
         <a href="/"> Voltar </a>
     ''') 
     
-        
-
+@app.route('/correlacao')
+def correlacao():
+    with sqlite3.connect(db_path) as conn:
+         inad_df = pd.read_sql_query('SELECT * FROM inadimplencia', conn)
+         selic_df = pd.read_sql_query('SELECT * FROM selic', conn)
+    merged = pd.merge(inad_df, selic_df, on = 'mes')
+    
+    # Correlação de pearson
+    correl = merged ['inadimplencia'].corr(merged['selic_diaria'])
+    
+    # Regressão Linear para visualização 
+    
+    x = merged ['selic_diaria']
+    y = merged ['inadimplencia']
+    m, b = np.polyfit (x,y,1)
+    
+    # O terceiro argumento indica que queremos ajustar uma reta, ou seja, um polinomio de primeiro grau
+    # M -> Coeficiente angular (inclinação da reta)
+    # B -> Coeficiente linear (ponto onde a reta cruza o eixo y)
+ 
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=x,
+        y=y,
+        mode = 'markers',
+        name = 'Inadimplencia x Selic',
+        hovertemplate = 'SELIC: %{X:.2f}<br>Inadimplencia: %{Y:.2f}<extra></extra>',
+        marker=dict(
+            color = 'rgba(0,123,255,0.8)',
+            size = 12,
+            line = dict(width=2, color='white'),
+            symbol='circle'
+            )
+        ))
+    fig.add_trace(go.Scatter(
+       x=x,
+       y= m * x + b,
+       mode = 'lines',
+       name = 'Linha de Tendencia',
+       line = dict(color = 'rgba(220,53, 69,1)', width=4, dash='dot')
+    ))
+    fig.update_layout(
+        title ={
+            'text':f'<b>Correlação entre Selic e Inadiplência</b><br><span style="font-size:16px">Coeficiente de Correlação: {correl}</span>',
+            'y':0.95,
+            'x':0.5,
+            'xanchor':'center',
+            'yanchor':'top'  
+        },
+        xaxis_title=dict(
+            text         = 'Selic Media Mensal (%)',
+            font         = dict(size=18,family = 'Arial', color = 'gray')
+            ),
+        yaxis_title=dict(
+            text         = 'Inadimplencia (%)',
+            font         = dict(size=18,family = 'Arial', color = 'gray')
+            ),
+        xaxis=dict(
+            gridcolor    = 'light gray',
+            tickfont     = dict(size=14,family = 'Arial', color = 'gray')
+            ),
+        yaxis=dict(
+            gridcolor    = 'light gray',
+            tickfont     = dict(size=14,family = 'Arial', color = 'gray')
+            ),
+        plot_bgcolor     = "#f8f9fa",
+        paper_bgcolor    = "white",
+        font             = dict(size=14,family = 'Arial', color = 'black'),
+        margin           = dict(l=60, r=60, t=120, b=60),
+        legend           = dict(
+            orientation  = 'h',
+            yanchor      = 'bottom',
+            y            = 1.05,
+            xanchor      = 'center',
+            x            = 0.5,
+            bgcolor      = 'rgba(0,0,0,0)',
+            borderwidth  = 0
+        )
+    )
+    graph_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+    return render_template_string('''
+            <html>
+        <head>
+            <title>Correlação SELIC vs Inadimplência</title>
+            <style>
+                body { font-family: Arial, sans-serif; background-color: #ffffff; color: #333; }
+                .container { width: 90%; margin: auto; text-align: center; }
+                h1 { margin-top: 40px; }
+                a { text-decoration: none; color: #007bff; }
+                a:hover { text-decoration: underline; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Correlação entre SELIC e Inadimplência</h1>
+                <div>{{graph|safe}}</div>
+                <br><div><a href="/">Voltar</a></div>
+            </div>
+        </body>
+        </html>                      
+    ''',graph = graph_html)
+    
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
+    
